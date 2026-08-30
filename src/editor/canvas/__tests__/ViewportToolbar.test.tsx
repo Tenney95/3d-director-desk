@@ -1031,6 +1031,76 @@ it("opens the geometry submenu only after hover every time the add-character men
   expect(screen.getByRole("menu", { name: "选择几何模型" })).toBeInTheDocument();
 });
 
+it("keeps top-mounted toolbar panels inside the canvas and reopens them on every click", async () => {
+  const user = userEvent.setup();
+  render(
+    <div data-testid="viewport-frame">
+      <ViewportToolbar />
+    </div>
+  );
+
+  const frame = screen.getByTestId("viewport-frame");
+  const toolbar = screen.getByRole("group", { name: "3D视口快捷工具" });
+  const characterTrigger = screen.getByRole("button", { name: "添加角色" });
+
+  vi.spyOn(frame, "getBoundingClientRect").mockReturnValue({
+    bottom: 800,
+    height: 800,
+    left: 0,
+    right: 1000,
+    top: 0,
+    width: 1000,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
+  vi.spyOn(toolbar, "getBoundingClientRect").mockReturnValue({
+    bottom: 124,
+    height: 48,
+    left: 250,
+    right: 750,
+    top: 76,
+    width: 500,
+    x: 250,
+    y: 76,
+    toJSON: () => ({}),
+  });
+  vi.spyOn(characterTrigger, "getBoundingClientRect").mockReturnValue({
+    bottom: 124,
+    height: 32,
+    left: 370,
+    right: 402,
+    top: 92,
+    width: 32,
+    x: 370,
+    y: 92,
+    toJSON: () => ({}),
+  });
+
+  await user.click(characterTrigger);
+  const characterMenu = screen.getByRole("menu", { name: "选择角色体型" });
+  expect(characterMenu).toHaveStyle({ top: "132px", bottom: "auto" });
+
+  await user.click(characterTrigger);
+  expect(screen.queryByRole("menu", { name: "选择角色体型" })).not.toBeInTheDocument();
+  await user.click(characterTrigger);
+  expect(screen.getByRole("menu", { name: "选择角色体型" })).toHaveStyle({ top: "132px", bottom: "auto" });
+
+  await user.click(screen.getByRole("button", { name: "模型库" }));
+  const modelLibrary = screen.getByRole("dialog", { name: "模型库" });
+  expect(modelLibrary).toHaveStyle({
+    top: "134px",
+    bottom: "auto",
+    width: "500px",
+    height: "360px",
+  });
+
+  await user.click(screen.getByRole("button", { name: "关闭模型库" }));
+  expect(screen.queryByRole("dialog", { name: "模型库" })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "模型库" }));
+  expect(screen.getByRole("dialog", { name: "模型库" })).toHaveStyle({ top: "134px", bottom: "auto" });
+});
+
 it("closes the geometry submenu when users hover another character menu item", async () => {
   const user = userEvent.setup();
   render(<ViewportToolbar />);

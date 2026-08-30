@@ -3,7 +3,7 @@
   left: 50%;
   bottom: calc(100% + 10px);
   z-index: 35;
-  width: min(500px, calc(100vw - 40px));
+  width: min(500px, calc(100% - 32px));
   height: 360px;
   border: 1px solid rgb(var(--border-rgb) / 0.35);
   border-radius: 12px;

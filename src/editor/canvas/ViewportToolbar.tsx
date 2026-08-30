@@ -80,6 +80,8 @@ const CHARACTER_MENU_WIDTH = 132;
 const GEOMETRY_MENU_WIDTH = 112;
 const CROWD_PANEL_WIDTH = 260;
 const MODEL_LIBRARY_PANEL_WIDTH = 500;
+const MODEL_LIBRARY_PANEL_HEIGHT = 360;
+const MODEL_LIBRARY_GAP = 10;
 const ASPECT_RATIO_PANEL_WIDTH = 340;
 const DEFAULT_CROWD_ROWS = 3;
 const DEFAULT_CROWD_COLUMNS = 3;
@@ -111,6 +113,45 @@ function waitForNextAnimationFrame() {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => resolve());
   });
+}
+
+function opensBelowFrameCenter(frameRect: DOMRect, anchorRect: DOMRect) {
+  return anchorRect.top + anchorRect.height / 2 < frameRect.top + frameRect.height / 2;
+}
+
+function getToolbarPanelVerticalStyle(frameRect: DOMRect, anchorRect: DOMRect, gap: number): CSSProperties {
+  if (opensBelowFrameCenter(frameRect, anchorRect)) {
+    return {
+      top: `${anchorRect.bottom - frameRect.top + gap}px`,
+      bottom: "auto",
+    };
+  }
+
+  return {
+    top: "auto",
+    bottom: `${frameRect.bottom - anchorRect.top + gap}px`,
+  };
+}
+
+function getSidePanelVerticalStyle(frameRect: DOMRect, anchorRect: DOMRect): CSSProperties {
+  if (opensBelowFrameCenter(frameRect, anchorRect)) {
+    return {
+      top: `${Math.max(FLOATING_PANEL_MARGIN, anchorRect.top - frameRect.top)}px`,
+      bottom: "auto",
+    };
+  }
+
+  return {
+    top: "auto",
+    bottom: `${Math.max(FLOATING_PANEL_MARGIN, frameRect.bottom - anchorRect.bottom)}px`,
+  };
+}
+
+function getAvailableFloatingHeight(frameRect: DOMRect, anchorRect: DOMRect, gap: number) {
+  const availableHeight = opensBelowFrameCenter(frameRect, anchorRect)
+    ? frameRect.bottom - anchorRect.bottom - gap - FLOATING_PANEL_MARGIN
+    : anchorRect.top - frameRect.top - gap - FLOATING_PANEL_MARGIN;
+  return Math.max(MIN_FLOATING_PANEL_HEIGHT, availableHeight);
 }
 
 export function ViewportToolbar({
@@ -311,89 +352,87 @@ export function ViewportToolbar({
 
       if (characterMenuOpen && characterTriggerRef.current) {
         const triggerRect = characterTriggerRef.current.getBoundingClientRect();
-        const availableHeight = Math.max(
-          MIN_FLOATING_PANEL_HEIGHT,
-          frameRect.bottom - toolbarRect.bottom - FLOATING_PANEL_GAP - FLOATING_PANEL_MARGIN
+        const availableHeight = getAvailableFloatingHeight(
+          frameRect,
+          toolbarRect,
+          FLOATING_PANEL_GAP
         );
         setCharacterMenuStyle({
+          ...getToolbarPanelVerticalStyle(frameRect, toolbarRect, FLOATING_PANEL_GAP),
           left: `${getCenteredPanelLeft(
             triggerRect.left + triggerRect.width / 2,
             characterMenuRef.current,
             CHARACTER_MENU_WIDTH
           )}px`,
-          top: `${toolbarRect.bottom - frameRect.top + FLOATING_PANEL_GAP}px`,
-          bottom: "auto",
           maxHeight: `${availableHeight}px`,
         });
       }
 
       if (geometryMenuOpen && geometryTriggerRef.current) {
         const triggerRect = geometryTriggerRef.current.getBoundingClientRect();
-        const availableHeight = Math.max(
-          MIN_FLOATING_PANEL_HEIGHT,
-          frameRect.bottom - triggerRect.top - FLOATING_PANEL_MARGIN
-        );
+        const availableHeight = getAvailableFloatingHeight(frameRect, triggerRect, 0);
         setGeometryMenuStyle({
+          ...getSidePanelVerticalStyle(frameRect, triggerRect),
           left: `${getSidePanelLeft(
             triggerRect,
             geometryMenuRef.current,
             GEOMETRY_MENU_WIDTH
           )}px`,
-          top: `${triggerRect.top - frameRect.top}px`,
-          bottom: "auto",
           maxHeight: `${availableHeight}px`,
         });
       }
 
       if (crowdPanelOpen && crowdTriggerRef.current) {
         const triggerRect = crowdTriggerRef.current.getBoundingClientRect();
-        const availableHeight = Math.max(
-          MIN_FLOATING_PANEL_HEIGHT,
-          frameRect.bottom - triggerRect.top - FLOATING_PANEL_MARGIN
-        );
+        const availableHeight = getAvailableFloatingHeight(frameRect, triggerRect, 0);
         setCrowdPanelStyle({
+          ...getSidePanelVerticalStyle(frameRect, triggerRect),
           left: `${getSidePanelLeft(
             triggerRect,
             crowdPanelRef.current,
             CROWD_PANEL_WIDTH
           )}px`,
-          top: `${triggerRect.top - frameRect.top}px`,
-          bottom: "auto",
           maxHeight: `${availableHeight}px`,
         });
       }
 
       if (modelLibraryOpen) {
-        const availableHeight = Math.max(
-          MIN_FLOATING_PANEL_HEIGHT,
-          frameRect.bottom - toolbarRect.bottom - 10 - FLOATING_PANEL_MARGIN
+        const availableHeight = getAvailableFloatingHeight(
+          frameRect,
+          toolbarRect,
+          MODEL_LIBRARY_GAP
+        );
+        const panelWidth = Math.min(
+          modelLibraryPanelRef.current?.offsetWidth || MODEL_LIBRARY_PANEL_WIDTH,
+          Math.max(0, frameRect.width - FLOATING_PANEL_MARGIN * 2)
         );
         setModelLibraryPanelStyle({
+          ...getToolbarPanelVerticalStyle(frameRect, toolbarRect, MODEL_LIBRARY_GAP),
           left: `${getCenteredPanelLeft(
             toolbarRect.left + toolbarRect.width / 2,
             modelLibraryPanelRef.current,
             MODEL_LIBRARY_PANEL_WIDTH
           )}px`,
-          top: `${toolbarRect.bottom - frameRect.top + 10}px`,
-          bottom: "auto",
+          width: `${panelWidth}px`,
+          height: `${Math.min(MODEL_LIBRARY_PANEL_HEIGHT, availableHeight)}px`,
           maxHeight: `${availableHeight}px`,
         });
       }
 
       if (aspectRatioPanelOpen && aspectRatioTriggerRef.current) {
         const triggerRect = aspectRatioTriggerRef.current.getBoundingClientRect();
-        const availableHeight = Math.max(
-          MIN_FLOATING_PANEL_HEIGHT,
-          frameRect.bottom - toolbarRect.bottom - FLOATING_PANEL_GAP - FLOATING_PANEL_MARGIN
+        const availableHeight = getAvailableFloatingHeight(
+          frameRect,
+          toolbarRect,
+          FLOATING_PANEL_GAP
         );
         setAspectRatioPanelStyle({
+          ...getToolbarPanelVerticalStyle(frameRect, toolbarRect, FLOATING_PANEL_GAP),
           left: `${getCenteredPanelLeft(
             triggerRect.left + triggerRect.width / 2,
             aspectRatioPanelRef.current,
             ASPECT_RATIO_PANEL_WIDTH
           )}px`,
-          top: `${toolbarRect.bottom - frameRect.top + FLOATING_PANEL_GAP}px`,
-          bottom: "auto",
           maxHeight: `${availableHeight}px`,
         });
       }
